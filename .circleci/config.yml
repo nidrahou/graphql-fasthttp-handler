@@ -1,0 +1,20 @@
+version: 2
+jobs:
+  build:
+    docker:
+    - image: circleci/golang:1.9
+
+    working_directory: /go/src/github.com/lab259/graphql-fashttp-handler
+
+    steps:
+      - checkout
+
+      - run: go get -u github.com/onsi/ginkgo/ginkgo
+
+      - run: make deps-ci
+
+      - run: make test
+
+      - run: make coverage-ci
+
+      - run: bash <(curl -s https://codecov.io/bash)

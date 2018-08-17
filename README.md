@@ -1,6 +1,13 @@
-# graphql-go-handler [![Build Status](https://travis-ci.org/graphql-go/handler.svg)](https://travis-ci.org/graphql-go/handler) [![GoDoc](https://godoc.org/graphql-go/handler?status.svg)](https://godoc.org/github.com/graphql-go/handler) [![Coverage Status](https://coveralls.io/repos/graphql-go/handler/badge.svg?branch=master&service=github)](https://coveralls.io/github/graphql-go/handler?branch=master) [![Join the chat at https://gitter.im/graphql-go/graphql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/graphql-go/graphql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![CircleCI](https://circleci.com/gh/lab259/graphql-fashttp-handler.svg?style=shield)](https://circleci.com/gh/lab259/graphql-fashttp-handler)
+[![GoDoc](https://godoc.org/lab259/graphql-fashttp-handler?status.svg)](https://godoc.org/github.com/lab259/graphql-fashttp-handler)
 
-Golang HTTP.Handler for [graphl-go](https://github.com/graphql-go/graphql)
+# graphql-go-handler
+
+Golang HTTP.Handler for [graphl-go](https://github.com/graphql-go/graphql).
+
+The original implementation by [graphql-go/handler](https://github.com/graphql-go/handler)
+uses the default HTTP implementation. This fork adapts the library for using the
+[valyala/fasthttp](https://github.com/valyala/fasthttp).
 
 ### Usage
 
@@ -8,38 +15,30 @@ Golang HTTP.Handler for [graphl-go](https://github.com/graphql-go/graphql)
 package main
 
 import (
-	"net/http"
-	"github.com/graphql-go/handler"
+	"github.com/valyala/fasthttp"
+	handler "github.com/lab259/graphql-fashttp-handler"
+	"github.com/graphql-go/graphql/testutil"
 )
 
 func main() {
-	schema, _ := graphql.NewSchema(...)
-
 	h := handler.New(&handler.Config{
-		Schema: &schema,
-		Pretty: true,
+		Schema:   &testutil.StarWarsSchema,
+		Pretty:   true,
 		GraphiQL: true,
 	})
 
-	http.Handle("/graphql", h)
-	http.ListenAndServe(":8080", nil)
+	// Serving given endpoint for the sake of example
+	fasthttp.ListenAndServe(":8080", func(ctx *fasthttp.RequestCtx) {
+		h.ServeHTTP(ctx)
+	})
 }
+
 ```
 
-### Using Playground
-```go
-h := handler.New(&handler.Config{
-	Schema: &schema,
-	Pretty: true,
-	GraphiQL: false,
-	Playground: true,
-})
-```
 
 ### Details
 
-The handler will accept requests with
-the parameters:
+The handler will accept requests with the parameters:
 
   * **`query`**: A string GraphQL document to be executed.
 
@@ -77,6 +76,17 @@ depending on the provided `Content-Type` header.
 - [todomvc-relay-go](https://github.com/sogko/todomvc-relay-go)
 
 ### Test
+
 ```bash
-$ go get github.com/graphql-go/handler
-$ go build && go test ./...
+$ go get -u github.com/onsi/ginkgo/ginkgo
+$ make deps
+$ make test
+```
+
+### Credits
+
+This project is originally forked from [graphql-go/handler](https://github.com/graphql-go/handler).
+
+### License
+
+MIT

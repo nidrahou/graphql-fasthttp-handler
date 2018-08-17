@@ -33,6 +33,7 @@ func decodeResponse(t *testing.T, recorder *httptest.ResponseRecorder) *graphql.
 	}
 	return &target
 }
+
 func executeTest(t *testing.T, h *handler.Handler, req *http.Request) (*graphql.Result, *httptest.ResponseRecorder) {
 	resp := httptest.NewRecorder()
 	h.ServeHTTP(resp, req)

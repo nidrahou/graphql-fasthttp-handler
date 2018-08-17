@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"github.com/valyala/fasthttp"
 )
 
 type playgroundData struct {
@@ -14,26 +15,32 @@ type playgroundData struct {
 }
 
 // renderPlayground renders the Playground GUI
-func renderPlayground(w http.ResponseWriter, r *http.Request) {
+func renderPlayground(ctx *fasthttp.RequestCtx) {
 	t := template.New("Playground")
 	t, err := t.Parse(graphcoolPlaygroundTemplate)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		httpError(ctx, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	d := playgroundData{
 		PlaygroundVersion:    graphcoolPlaygroundVersion,
 		Endpoint:             "/graphql",
-		SubscriptionEndpoint: fmt.Sprintf("ws://%v/subscriptions", r.Host),
+		SubscriptionEndpoint: fmt.Sprintf("ws://%v/subscriptions", string(ctx.Request.Host())),
 		SetTitle:             true,
 	}
-	err = t.ExecuteTemplate(w, "index", d)
+	err = t.ExecuteTemplate(ctx, "index", d)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		httpError(ctx, err.Error(), http.StatusInternalServerError)
 	}
 
 	return
+}
+func httpError(ctx *fasthttp.RequestCtx, content string, status int) {
+	ctx.Response.SetStatusCode(status)
+	ctx.Response.Header.SetContentType("text/plain; charset=utf-8")
+	ctx.Response.Header.Add("X-Content-Type-Options", "nosniff")
+	fmt.Fprintln(ctx, content)
 }
 
 const graphcoolPlaygroundVersion = "1.5.2"

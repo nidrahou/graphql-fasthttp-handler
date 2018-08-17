@@ -2,17 +2,16 @@ package handler
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strings"
-
+	"github.com/valyala/fasthttp"
 	"github.com/graphql-go/graphql"
 
 	"context"
+	"net/http"
+	"strings"
 )
 
-const (
+var (
+	ContentTypeHTML           = "text/html"
 	ContentTypeJSON           = "application/json"
 	ContentTypeGraphQL        = "application/graphql"
 	ContentTypeFormURLEncoded = "application/x-www-form-urlencoded"
@@ -25,6 +24,7 @@ type Handler struct {
 	playground   bool
 	rootObjectFn RootObjectFn
 }
+
 type RequestOptions struct {
 	Query         string                 `json:"query" url:"query" schema:"query"`
 	Variables     map[string]interface{} `json:"variables" url:"variables" schema:"variables"`
@@ -38,18 +38,23 @@ type requestOptionsCompatibility struct {
 	OperationName string `json:"operationName" url:"operationName" schema:"operationName"`
 }
 
-func getFromForm(values url.Values) *RequestOptions {
-	query := values.Get("query")
-	if query != "" {
+func getFromArgs(values *fasthttp.Args) *RequestOptions {
+	query := values.Peek("query")
+	if query != nil {
 		// get variables map
-		variables := make(map[string]interface{}, len(values))
-		variablesStr := values.Get("variables")
-		json.Unmarshal([]byte(variablesStr), &variables)
+		variables := make(map[string]interface{}, values.Len())
+		variablesStr := values.Peek("variables")
+		if variablesStr != nil {
+			err := json.Unmarshal(variablesStr, &variables)
+			if err != nil {
+				return nil
+			}
+		}
 
 		return &RequestOptions{
-			Query:         query,
+			Query:         string(query),
 			Variables:     variables,
-			OperationName: values.Get("operationName"),
+			OperationName: string(values.Peek("operationName")),
 		}
 	}
 
@@ -57,39 +62,34 @@ func getFromForm(values url.Values) *RequestOptions {
 }
 
 // RequestOptions Parses a http.Request into GraphQL request options struct
-func NewRequestOptions(r *http.Request) *RequestOptions {
-	if reqOpt := getFromForm(r.URL.Query()); reqOpt != nil {
+func NewRequestOptions(ctx *fasthttp.RequestCtx) *RequestOptions {
+
+	if reqOpt := getFromArgs(ctx.URI().QueryArgs()); reqOpt != nil {
 		return reqOpt
 	}
 
-	if r.Method != "POST" {
-		return &RequestOptions{}
-	}
-
-	if r.Body == nil {
+	if !ctx.Request.Header.IsPost() || len(ctx.Request.Body()) == 0 {
 		return &RequestOptions{}
 	}
 
 	// TODO: improve Content-Type handling
-	contentTypeStr := r.Header.Get("Content-Type")
+	contentTypeStr := string(ctx.Request.Header.ContentType())
 	contentTypeTokens := strings.Split(contentTypeStr, ";")
 	contentType := contentTypeTokens[0]
 
 	switch contentType {
 	case ContentTypeGraphQL:
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return &RequestOptions{}
-		}
+		body := ctx.Request.Body()
 		return &RequestOptions{
 			Query: string(body),
 		}
 	case ContentTypeFormURLEncoded:
-		if err := r.ParseForm(); err != nil {
+		args := ctx.PostArgs()
+		if args == nil {
 			return &RequestOptions{}
 		}
 
-		if reqOpt := getFromForm(r.PostForm); reqOpt != nil {
+		if reqOpt := getFromArgs(args); reqOpt != nil {
 			return reqOpt
 		}
 
@@ -99,11 +99,8 @@ func NewRequestOptions(r *http.Request) *RequestOptions {
 		fallthrough
 	default:
 		var opts RequestOptions
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return &opts
-		}
-		err = json.Unmarshal(body, &opts)
+		body := ctx.Request.Body()
+		err := json.Unmarshal(body, &opts)
 		if err != nil {
 			// Probably `variables` was sent as a string instead of an object.
 			// So, we try to be polite and try to parse that as a JSON string
@@ -117,9 +114,9 @@ func NewRequestOptions(r *http.Request) *RequestOptions {
 
 // ContextHandler provides an entrypoint into executing graphQL queries with a
 // user-provided context.
-func (h *Handler) ContextHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ContextHandler(ctx context.Context, ctxreq *fasthttp.RequestCtx) {
 	// get query
-	opts := NewRequestOptions(r)
+	opts := NewRequestOptions(ctxreq)
 
 	// execute graphql query
 	params := graphql.Params{
@@ -130,51 +127,51 @@ func (h *Handler) ContextHandler(ctx context.Context, w http.ResponseWriter, r *
 		Context:        ctx,
 	}
 	if h.rootObjectFn != nil {
-		params.RootObject = h.rootObjectFn(ctx, r)
+		params.RootObject = h.rootObjectFn(ctx, &ctxreq.Request)
 	}
 	result := graphql.Do(params)
 
 	if h.graphiql {
-		acceptHeader := r.Header.Get("Accept")
-		_, raw := r.URL.Query()["raw"]
-		if !raw && !strings.Contains(acceptHeader, "application/json") && strings.Contains(acceptHeader, "text/html") {
-			renderGraphiQL(w, params)
+		acceptHeader := string(ctxreq.Request.Header.Peek("Accept"))
+		raw := ctxreq.Request.URI().QueryArgs().Peek("raw")
+		if raw != nil && !strings.Contains(acceptHeader, ContentTypeJSON) && strings.Contains(acceptHeader, ContentTypeHTML) {
+			renderGraphiQL(ctxreq, params)
 			return
 		}
 	}
 
 	if h.playground {
-		acceptHeader := r.Header.Get("Accept")
-		_, raw := r.URL.Query()["raw"]
-		if !raw && !strings.Contains(acceptHeader, "application/json") && strings.Contains(acceptHeader, "text/html") {
-			renderPlayground(w, r)
+		acceptHeader := string(ctxreq.Request.Header.Peek("Accept"))
+		raw := ctxreq.Request.URI().QueryArgs().Peek("raw")
+		if raw != nil && !strings.Contains(acceptHeader, ContentTypeJSON) && strings.Contains(acceptHeader, ContentTypeHTML) {
+			renderPlayground(ctxreq)
 			return
 		}
 	}
 
 	// use proper JSON Header
-	w.Header().Add("Content-Type", "application/json; charset=utf-8")
+	ctxreq.Response.Header.Add("Content-Type", "application/json; charset=utf-8")
 
 	if h.pretty {
-		w.WriteHeader(http.StatusOK)
+		ctxreq.Response.SetStatusCode(http.StatusOK)
 		buff, _ := json.MarshalIndent(result, "", "\t")
 
-		w.Write(buff)
+		ctxreq.Write(buff)
 	} else {
-		w.WriteHeader(http.StatusOK)
+		ctxreq.Response.SetStatusCode(http.StatusOK)
 		buff, _ := json.Marshal(result)
 
-		w.Write(buff)
+		ctxreq.Write(buff)
 	}
 }
 
 // ServeHTTP provides an entrypoint into executing graphQL queries.
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.ContextHandler(r.Context(), w, r)
+func (h *Handler) ServeHTTP(ctx *fasthttp.RequestCtx) {
+	h.ContextHandler(context.Background(), ctx)
 }
 
 // RootObjectFn allows a user to generate a RootObject per request
-type RootObjectFn func(ctx context.Context, r *http.Request) map[string]interface{}
+type RootObjectFn func(ctx context.Context, r *fasthttp.Request) map[string]interface{}
 
 type Config struct {
 	Schema       *graphql.Schema
