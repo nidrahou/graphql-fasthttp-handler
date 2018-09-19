@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/lab259/graphql-fashttp-handler.svg?style=shield)](https://circleci.com/gh/lab259/graphql-fashttp-handler)
+[![CircleCI](https://circleci.com/gh/lab259/graphql-fasthttp-handler.svg?style=shield)](https://circleci.com/gh/lab259/graphql-fasthttp-handler)
 [![GoDoc](https://godoc.org/lab259/graphql-fashttp-handler?status.svg)](https://godoc.org/github.com/lab259/graphql-fashttp-handler)
 
 # graphql-go-handler
