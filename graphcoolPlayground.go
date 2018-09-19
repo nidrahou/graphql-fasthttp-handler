@@ -34,6 +34,8 @@ func renderPlayground(ctx *fasthttp.RequestCtx) {
 		httpError(ctx, err.Error(), http.StatusInternalServerError)
 	}
 
+	ctx.Response.Header.SetContentType("text/html; charset=utf-8")
+
 	return
 }
 func httpError(ctx *fasthttp.RequestCtx, content string, status int) {

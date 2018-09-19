@@ -3,7 +3,6 @@ package handler_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -14,16 +13,15 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/testutil"
-	"github.com/graphql-go/handler"
+	"."
+	"github.com/valyala/fasthttp"
 )
 
-func decodeResponse(t *testing.T, recorder *httptest.ResponseRecorder) *graphql.Result {
+func decodeResponse(t *testing.T, ctx *fasthttp.RequestCtx) *graphql.Result {
 	// clone request body reader so that we can have a nicer error message
 	bodyString := ""
 	var target graphql.Result
-	if b, err := ioutil.ReadAll(recorder.Body); err == nil {
-		bodyString = string(b)
-	}
+	bodyString = string(ctx.Response.Body())
 	readerClone := strings.NewReader(bodyString)
 
 	decoder := json.NewDecoder(readerClone)
@@ -34,11 +32,20 @@ func decodeResponse(t *testing.T, recorder *httptest.ResponseRecorder) *graphql.
 	return &target
 }
 
-func executeTest(t *testing.T, h *handler.Handler, req *http.Request) (*graphql.Result, *httptest.ResponseRecorder) {
-	resp := httptest.NewRecorder()
-	h.ServeHTTP(resp, req)
-	result := decodeResponse(t, resp)
-	return result, resp
+func executeTest(t *testing.T, h *handler.Handler, ctx *fasthttp.RequestCtx) (*graphql.Result) {
+	h.ServeHTTP(ctx)
+	result := decodeResponse(t, ctx)
+	return result
+}
+
+func newHTTPCtx(method, url string, body []byte) *fasthttp.RequestCtx {
+	result := &fasthttp.RequestCtx{}
+	result.Request.Header.SetMethod(method)
+	result.Request.SetRequestURI(url)
+	if body != nil {
+		result.Request.AppendBody(body)
+	}
+	return result
 }
 
 func TestContextPropagated(t *testing.T) {
@@ -67,7 +74,7 @@ func TestContextPropagated(t *testing.T) {
 		},
 	}
 	queryString := `query={name}`
-	req, _ := http.NewRequest("GET", fmt.Sprintf("/graphql?%v", queryString), nil)
+	httpCtx := newHTTPCtx("GET", fmt.Sprintf("/graphql?%v", queryString), nil)
 
 	h := handler.New(&handler.Config{
 		Schema: &myNameSchema,
@@ -76,8 +83,8 @@ func TestContextPropagated(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), "name", "context-data")
 	resp := httptest.NewRecorder()
-	h.ContextHandler(ctx, resp, req)
-	result := decodeResponse(t, resp)
+	h.ContextHandler(ctx, httpCtx)
+	result := decodeResponse(t, httpCtx)
 	if resp.Code != http.StatusOK {
 		t.Fatalf("unexpected server response %v", resp.Code)
 	}
@@ -95,15 +102,15 @@ func TestHandler_BasicQuery_Pretty(t *testing.T) {
 		},
 	}
 	queryString := `query=query HeroNameQuery { hero { name } }`
-	req, _ := http.NewRequest("GET", fmt.Sprintf("/graphql?%v", queryString), nil)
+	httpCtx := newHTTPCtx("GET", fmt.Sprintf("/graphql?%v", queryString), nil)
 
 	h := handler.New(&handler.Config{
 		Schema: &testutil.StarWarsSchema,
 		Pretty: true,
 	})
-	result, resp := executeTest(t, h, req)
-	if resp.Code != http.StatusOK {
-		t.Fatalf("unexpected server response %v", resp.Code)
+	result := executeTest(t, h, httpCtx)
+	if httpCtx.Response.StatusCode() != fasthttp.StatusOK {
+		t.Fatalf("unexpected server response %v", httpCtx.Response.StatusCode())
 	}
 	if !reflect.DeepEqual(result, expected) {
 		t.Fatalf("wrong result, graphql result diff: %v", testutil.Diff(expected, result))
@@ -119,15 +126,15 @@ func TestHandler_BasicQuery_Ugly(t *testing.T) {
 		},
 	}
 	queryString := `query=query HeroNameQuery { hero { name } }`
-	req, _ := http.NewRequest("GET", fmt.Sprintf("/graphql?%v", queryString), nil)
+	httpCtx := newHTTPCtx("GET", fmt.Sprintf("/graphql?%v", queryString), nil)
 
 	h := handler.New(&handler.Config{
 		Schema: &testutil.StarWarsSchema,
 		Pretty: false,
 	})
-	result, resp := executeTest(t, h, req)
-	if resp.Code != http.StatusOK {
-		t.Fatalf("unexpected server response %v", resp.Code)
+	result := executeTest(t, h, httpCtx)
+	if httpCtx.Response.StatusCode() != http.StatusOK {
+		t.Fatalf("unexpected server response %v", httpCtx.Response.StatusCode())
 	}
 	if !reflect.DeepEqual(result, expected) {
 		t.Fatalf("wrong result, graphql result diff: %v", testutil.Diff(expected, result))
@@ -180,18 +187,18 @@ func TestHandler_BasicQuery_WithRootObjFn(t *testing.T) {
 		},
 	}
 	queryString := `query={name}`
-	req, _ := http.NewRequest("GET", fmt.Sprintf("/graphql?%v", queryString), nil)
+	httpCtx := newHTTPCtx("GET", fmt.Sprintf("/graphql?%v", queryString), nil)
 
 	h := handler.New(&handler.Config{
 		Schema: &myNameSchema,
 		Pretty: true,
-		RootObjectFn: func(ctx context.Context, r *http.Request) map[string]interface{} {
+		RootObjectFn: func(ctx context.Context, r *fasthttp.Request) map[string]interface{} {
 			return map[string]interface{}{"rootValue": "foo"}
 		},
 	})
-	result, resp := executeTest(t, h, req)
-	if resp.Code != http.StatusOK {
-		t.Fatalf("unexpected server response %v", resp.Code)
+	result := executeTest(t, h, httpCtx)
+	if httpCtx.Response.StatusCode() != http.StatusOK {
+		t.Fatalf("unexpected server response %v", httpCtx.Response.StatusCode())
 	}
 	if !reflect.DeepEqual(result, expected) {
 		t.Fatalf("wrong result, graphql result diff: %v", testutil.Diff(expected, result))

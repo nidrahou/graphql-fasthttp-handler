@@ -133,8 +133,7 @@ func (h *Handler) ContextHandler(ctx context.Context, ctxreq *fasthttp.RequestCt
 
 	if h.graphiql {
 		acceptHeader := string(ctxreq.Request.Header.Peek("Accept"))
-		raw := ctxreq.Request.URI().QueryArgs().Peek("raw")
-		if raw != nil && !strings.Contains(acceptHeader, ContentTypeJSON) && strings.Contains(acceptHeader, ContentTypeHTML) {
+		if !ctxreq.Request.URI().QueryArgs().Has("raw") && !strings.Contains(acceptHeader, ContentTypeJSON) && strings.Contains(acceptHeader, ContentTypeHTML) {
 			renderGraphiQL(ctxreq, params)
 			return
 		}
@@ -142,26 +141,25 @@ func (h *Handler) ContextHandler(ctx context.Context, ctxreq *fasthttp.RequestCt
 
 	if h.playground {
 		acceptHeader := string(ctxreq.Request.Header.Peek("Accept"))
-		raw := ctxreq.Request.URI().QueryArgs().Peek("raw")
-		if raw != nil && !strings.Contains(acceptHeader, ContentTypeJSON) && strings.Contains(acceptHeader, ContentTypeHTML) {
+		if !ctxreq.Request.URI().QueryArgs().Has("raw") && !strings.Contains(acceptHeader, ContentTypeJSON) && strings.Contains(acceptHeader, ContentTypeHTML) {
 			renderPlayground(ctxreq)
 			return
 		}
 	}
 
 	// use proper JSON Header
-	ctxreq.Response.Header.Add("Content-Type", "application/json; charset=utf-8")
+	ctxreq.Response.Header.SetContentType("application/json; charset=utf-8")
 
 	if h.pretty {
 		ctxreq.Response.SetStatusCode(http.StatusOK)
 		buff, _ := json.MarshalIndent(result, "", "\t")
 
-		ctxreq.Write(buff)
+		ctxreq.Response.AppendBody(buff)
 	} else {
 		ctxreq.Response.SetStatusCode(http.StatusOK)
 		buff, _ := json.Marshal(result)
 
-		ctxreq.Write(buff)
+		ctxreq.Response.AppendBody(buff)
 	}
 }
 

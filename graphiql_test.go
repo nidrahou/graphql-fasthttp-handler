@@ -2,12 +2,12 @@ package handler_test
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/graphql-go/graphql/testutil"
-	"github.com/graphql-go/handler"
+	"."
+	"github.com/valyala/fasthttp"
 )
 
 func TestRenderGraphiQL(t *testing.T) {
@@ -54,34 +54,29 @@ func TestRenderGraphiQL(t *testing.T) {
 
 	for tcID, tc := range cases {
 		t.Run(tcID, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, tc.url, nil)
-			if err != nil {
-				t.Error(err)
-			}
+			ctx := &fasthttp.RequestCtx{}
+			ctx.Request.Header.SetMethod("GET")
+			ctx.Request.SetRequestURI(tc.url)
 
-			req.Header.Set("Accept", tc.accept)
+			ctx.Request.Header.Set("Accept", tc.accept)
 
 			h := handler.New(&handler.Config{
 				Schema:   &testutil.StarWarsSchema,
 				GraphiQL: tc.graphiqlEnabled,
 			})
+			h.ServeHTTP(ctx)
 
-			rr := httptest.NewRecorder()
-
-			h.ServeHTTP(rr, req)
-			resp := rr.Result()
-
-			statusCode := resp.StatusCode
+			statusCode := ctx.Response.StatusCode()
 			if statusCode != tc.expectedStatusCode {
 				t.Fatalf("%s: wrong status code, expected %v, got %v", tcID, tc.expectedStatusCode, statusCode)
 			}
 
-			contentType := resp.Header.Get("Content-Type")
-			if contentType != tc.expectedContentType {
+			contentType := ctx.Response.Header.Peek("Content-Type")
+			if string(contentType) != tc.expectedContentType {
 				t.Fatalf("%s: wrong content type, expected %s, got %s", tcID, tc.expectedContentType, contentType)
 			}
 
-			body := rr.Body.String()
+			body := string(ctx.Response.Body())
 			if !strings.Contains(body, tc.expectedBodyContains) {
 				t.Fatalf("%s: wrong body, expected %s to contain %s", tcID, body, tc.expectedBodyContains)
 			}

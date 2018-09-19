@@ -63,6 +63,8 @@ func renderGraphiQL(ctx *fasthttp.RequestCtx, params graphql.Params) {
 		httpError(ctx, err.Error(), http.StatusInternalServerError)
 	}
 
+	ctx.Response.Header.SetContentType("text/html; charset=utf-8")
+
 	return
 }
 
