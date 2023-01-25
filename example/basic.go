@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/valyala/fasthttp"
-	".."
 	"github.com/graphql-go/graphql/testutil"
+	handler "github.com/nidrahou/graphql-fasthttp-handler"
+	"github.com/valyala/fasthttp"
 )
 
 func main() {

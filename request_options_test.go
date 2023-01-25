@@ -3,15 +3,14 @@ package handler_test
 import (
 	"bytes"
 	"fmt"
-	"net/url"
-	"reflect"
-	"testing"
-
 	"github.com/graphql-go/graphql/testutil"
+	handler "github.com/nidrahou/graphql-fasthttp-handler"
 	"github.com/valyala/fasthttp"
 	"io"
 	"io/ioutil"
-	handler "."
+	"net/url"
+	"reflect"
+	"testing"
 )
 
 func newCtx(method, u string, body io.Reader) (*fasthttp.RequestCtx, error) {
@@ -53,7 +52,7 @@ func TestRequestOptions_GET_ContentTypeApplicationGraphQL(t *testing.T) {
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("GET", "/graphql", bytes.NewBuffer(body))
-	req.Request.Header.SetContentType( "application/graphql")
+	req.Request.Header.SetContentType("application/graphql")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -69,7 +68,7 @@ func TestRequestOptions_GET_ContentTypeApplicationJSON(t *testing.T) {
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("GET", "/graphql", bytes.NewBufferString(body))
-	req.Request.Header.SetContentType( "application/json")
+	req.Request.Header.SetContentType("application/json")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -84,7 +83,7 @@ func TestRequestOptions_GET_ContentTypeApplicationUrlEncoded(t *testing.T) {
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("GET", "/graphql", bytes.NewBufferString(data.Encode()))
-	req.Request.Header.SetContentType( "application/x-www-form-urlencoded")
+	req.Request.Header.SetContentType("application/x-www-form-urlencoded")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -129,7 +128,7 @@ func TestRequestOptions_POST_ContentTypeApplicationGraphQL_WithNonGraphQLQueryCo
 	}
 
 	req, _ := newCtx("POST", "/graphql", bytes.NewBuffer(body))
-	req.Request.Header.SetContentType( "application/graphql")
+	req.Request.Header.SetContentType("application/graphql")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -144,7 +143,7 @@ func TestRequestOptions_POST_ContentTypeApplicationGraphQL_EmptyBody(t *testing.
 	}
 
 	req, _ := newCtx("POST", "/graphql", bytes.NewBuffer(body))
-	req.Request.Header.SetContentType( "application/graphql")
+	req.Request.Header.SetContentType("application/graphql")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -156,7 +155,7 @@ func TestRequestOptions_POST_ContentTypeApplicationGraphQL_NilBody(t *testing.T)
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("POST", "/graphql", nil)
-	req.Request.Header.SetContentType( "application/graphql")
+	req.Request.Header.SetContentType("application/graphql")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -174,7 +173,7 @@ func TestRequestOptions_POST_ContentTypeApplicationJSON(t *testing.T) {
 	}
 
 	req, _ := newCtx("POST", "/graphql", bytes.NewBufferString(body))
-	req.Request.Header.SetContentType( "application/json")
+	req.Request.Header.SetContentType("application/json")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -217,7 +216,7 @@ func TestRequestOptions_POST_ContentTypeApplicationJSON_WithVariablesAsObject(t 
 	}
 
 	req, _ := newCtx("POST", "/graphql", bytes.NewBufferString(body))
-	req.Request.Header.SetContentType( "application/json")
+	req.Request.Header.SetContentType("application/json")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -240,7 +239,7 @@ func TestRequestOptions_POST_ContentTypeApplicationJSON_WithVariablesAsString(t 
 	}
 
 	req, _ := newCtx("POST", "/graphql", bytes.NewBufferString(body))
-	req.Request.Header.SetContentType( "application/json")
+	req.Request.Header.SetContentType("application/json")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -253,7 +252,7 @@ func TestRequestOptions_POST_ContentTypeApplicationJSON_WithInvalidJSON(t *testi
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("POST", "/graphql", bytes.NewBufferString(body))
-	req.Request.Header.SetContentType( "application/json")
+	req.Request.Header.SetContentType("application/json")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -265,7 +264,7 @@ func TestRequestOptions_POST_ContentTypeApplicationJSON_WithNilBody(t *testing.T
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("POST", "/graphql", nil)
-	req.Request.Header.SetContentType( "application/json")
+	req.Request.Header.SetContentType("application/json")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -283,7 +282,7 @@ func TestRequestOptions_POST_ContentTypeApplicationUrlEncoded(t *testing.T) {
 	}
 
 	req, _ := newCtx("POST", "/graphql", bytes.NewBufferString(data.Encode()))
-	req.Request.Header.SetContentType( "application/x-www-form-urlencoded")
+	req.Request.Header.SetContentType("application/x-www-form-urlencoded")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -297,7 +296,7 @@ func TestRequestOptions_POST_ContentTypeApplicationUrlEncoded_WithInvalidData(t 
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("POST", "/graphql", bytes.NewBufferString(data))
-	req.Request.Header.SetContentType( "application/x-www-form-urlencoded")
+	req.Request.Header.SetContentType("application/x-www-form-urlencoded")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -310,7 +309,7 @@ func TestRequestOptions_POST_ContentTypeApplicationUrlEncoded_WithNilBody(t *tes
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("POST", "/graphql", nil)
-	req.Request.Header.SetContentType( "application/x-www-form-urlencoded")
+	req.Request.Header.SetContentType("application/x-www-form-urlencoded")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -338,7 +337,7 @@ func TestRequestOptions_PUT_ContentTypeApplicationGraphQL(t *testing.T) {
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("PUT", "/graphql", bytes.NewBuffer(body))
-	req.Request.Header.SetContentType( "application/graphql")
+	req.Request.Header.SetContentType("application/graphql")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -354,7 +353,7 @@ func TestRequestOptions_PUT_ContentTypeApplicationJSON(t *testing.T) {
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("PUT", "/graphql", bytes.NewBufferString(body))
-	req.Request.Header.SetContentType( "application/json")
+	req.Request.Header.SetContentType("application/json")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -369,7 +368,7 @@ func TestRequestOptions_PUT_ContentTypeApplicationUrlEncoded(t *testing.T) {
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("PUT", "/graphql", bytes.NewBufferString(data.Encode()))
-	req.Request.Header.SetContentType( "application/x-www-form-urlencoded")
+	req.Request.Header.SetContentType("application/x-www-form-urlencoded")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -397,7 +396,7 @@ func TestRequestOptions_DELETE_ContentTypeApplicationGraphQL(t *testing.T) {
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("DELETE", "/graphql", bytes.NewBuffer(body))
-	req.Request.Header.SetContentType( "application/graphql")
+	req.Request.Header.SetContentType("application/graphql")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -413,7 +412,7 @@ func TestRequestOptions_DELETE_ContentTypeApplicationJSON(t *testing.T) {
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("DELETE", "/graphql", bytes.NewBufferString(body))
-	req.Request.Header.SetContentType( "application/json")
+	req.Request.Header.SetContentType("application/json")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -428,7 +427,7 @@ func TestRequestOptions_DELETE_ContentTypeApplicationUrlEncoded(t *testing.T) {
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("DELETE", "/graphql", bytes.NewBufferString(data.Encode()))
-	req.Request.Header.SetContentType( "application/x-www-form-urlencoded")
+	req.Request.Header.SetContentType("application/x-www-form-urlencoded")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {
@@ -441,7 +440,7 @@ func TestRequestOptions_POST_UnsupportedContentType(t *testing.T) {
 	expected := &handler.RequestOptions{}
 
 	req, _ := newCtx("POST", "/graphql", bytes.NewBufferString(body))
-	req.Request.Header.SetContentType( "application/xml")
+	req.Request.Header.SetContentType("application/xml")
 	result := handler.NewRequestOptions(req)
 
 	if !reflect.DeepEqual(result, expected) {

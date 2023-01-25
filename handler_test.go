@@ -1,20 +1,18 @@
 package handler_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/testutil"
+	handler "github.com/nidrahou/graphql-fasthttp-handler"
+	"github.com/valyala/fasthttp"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
-
-	"context"
-
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/testutil"
-	"."
-	"github.com/valyala/fasthttp"
 )
 
 func decodeResponse(t *testing.T, ctx *fasthttp.RequestCtx) *graphql.Result {
@@ -32,7 +30,7 @@ func decodeResponse(t *testing.T, ctx *fasthttp.RequestCtx) *graphql.Result {
 	return &target
 }
 
-func executeTest(t *testing.T, h *handler.Handler, ctx *fasthttp.RequestCtx) (*graphql.Result) {
+func executeTest(t *testing.T, h *handler.Handler, ctx *fasthttp.RequestCtx) *graphql.Result {
 	h.ServeHTTP(ctx)
 	result := decodeResponse(t, ctx)
 	return result

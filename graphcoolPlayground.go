@@ -2,9 +2,9 @@ package handler
 
 import (
 	"fmt"
+	"github.com/valyala/fasthttp"
 	"html/template"
 	"net/http"
-	"github.com/valyala/fasthttp"
 )
 
 type playgroundData struct {

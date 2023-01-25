@@ -1,11 +1,10 @@
 package handler
 
 import (
-	"encoding/json"
-	"github.com/valyala/fasthttp"
-	"github.com/graphql-go/graphql"
-
 	"context"
+	"encoding/json"
+	"github.com/graphql-go/graphql"
+	"github.com/valyala/fasthttp"
 	"net/http"
 	"strings"
 )

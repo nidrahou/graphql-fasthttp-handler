@@ -2,11 +2,10 @@ package handler
 
 import (
 	"encoding/json"
-	"html/template"
-	"net/http"
-
 	"github.com/graphql-go/graphql"
 	"github.com/valyala/fasthttp"
+	"html/template"
+	"net/http"
 )
 
 // graphiqlData is the page data structure of the rendered GraphiQL page

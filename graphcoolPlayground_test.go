@@ -1,13 +1,12 @@
 package handler_test
 
 import (
+	"fmt"
+	"github.com/graphql-go/graphql/testutil"
+	handler "github.com/nidrahou/graphql-fasthttp-handler"
 	"net/http"
 	"strings"
 	"testing"
-
-	"github.com/graphql-go/graphql/testutil"
-	"."
-	"fmt"
 )
 
 func TestRenderPlayground(t *testing.T) {
